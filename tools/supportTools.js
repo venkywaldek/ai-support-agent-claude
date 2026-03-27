@@ -10,6 +10,14 @@ export function getWorkingHours() {
   return "Our support team is available Monday to Friday, 9:00 AM to 4:00 PM.";
 }
 
+export function getHumanSupportContact() {
+  return {
+    phone: "+358 403 070 854",
+    email: "support@company.com",
+    hours: "Monday to Friday, 9:00 AM to 4:00 PM",
+  };
+}
+
 export function getCurrentDateTime() {
   const now = new Date();
   return `Current date and time: ${now.toLocaleString()}`;
@@ -108,6 +116,18 @@ export function detectTool(message) {
     text.includes("draft a reply")
   ) {
     return "aiReply";
+  }
+
+  if (
+    text.includes("real person") ||
+    text.includes("human") ||
+    text.includes("call support") ||
+    text.includes("talk to someone") ||
+    text.includes("customer care") ||
+    text.includes("representative") ||
+    text.includes("agent")
+  ) {
+    return "humanSupport";
   }
 
   return null;

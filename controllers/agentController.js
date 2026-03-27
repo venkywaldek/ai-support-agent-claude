@@ -8,6 +8,7 @@ import {
   classifyTicket,
   getCompanyInfo,
   detectTool,
+  getHumanSupportContact
 } from "../tools/supportTools.js";
 
 dotenv.config();
@@ -57,7 +58,7 @@ export async function handleAgentRequest(req, res) {
     if (tool === "classify") {
       return res.json({
         type: "classification",
-        priority: "info",
+        priority: "high",
         reply: `Ticket classification: ${classifyTicket(message)}`,
       });
     }
@@ -70,6 +71,20 @@ export async function handleAgentRequest(req, res) {
         reply: info || "I could not find that company information.",
       });
     }
+    
+    if (tool === "humanSupport") {
+  const contact = getHumanSupportContact();
+
+  return res.json({
+    type: "human-support",
+    priority: "high",
+    reply: `I can connect you to a human support representative.
+
+Phone: ${contact.phone}
+Email: ${contact.email}
+Support hours: ${contact.hours}`,
+  });
+}
 
     const anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,

@@ -8,28 +8,84 @@
 </head>
 <body>
   <div class="page">
-    <div class="card">
-      <div class="header">
-        <h1>AI Support Agent</h1>
-        <p>Ask a customer support question and get a smart response.</p>
-      </div>
-
-      <div class="chat-box" id="chatBox">
-        <div class="message bot">
-          Hi, I'm your AI support assistant. Try asking about an order, refund, working hours, pricing, or ask me to write a reply.
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-badge">AI</div>
+          <div>
+            <h2>Support Agent</h2>
+            <p>Customer Ops Console</p>
+          </div>
         </div>
-      </div>
 
-      <form id="chatForm" class="input-row">
-        <input
-          type="text"
-          id="messageInput"
-          placeholder="Type your message..."
-          autocomplete="off"
-          required
-        />
-        <button type="submit" id="sendButton">Send</button>
-      </form>
+        <div class="sidebar-card">
+          <h3>Agent Capabilities</h3>
+          <ul>
+            <li>Order status</li>
+            <li>Refund policy</li>
+            <li>Working hours</li>
+            <li>Date and time</li>
+            <li>Ticket classification</li>
+            <li>Company info lookup</li>
+            <li>AI reply drafting</li>
+          </ul>
+        </div>
+
+        <div class="sidebar-card">
+          <h3>Try prompts</h3>
+          <p>"Where is my order?"</p>
+          <p>"What is your pricing?"</p>
+          <p>"Classify this angry complaint"</p>
+          <p>"Write a reply to this customer..."</p>
+        </div>
+      </aside>
+
+      <main class="card">
+        <div class="header">
+          <div>
+            <h1>AI Support Agent</h1>
+            <p>Ask a customer support question and get a smart response.</p>
+          </div>
+          <div class="status-pill">Live</div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <span class="stat-label">Handled today</span>
+            <span class="stat-value" id="handledCount">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">AI replies</span>
+            <span class="stat-value" id="aiCount">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Tool actions</span>
+            <span class="stat-value" id="toolCount">0</span>
+          </div>
+        </div>
+
+        <div class="chat-box" id="chatBox">
+          <div class="message bot">
+            <div>Hi, I'm your AI support assistant. Try asking about an order, refund, working hours, pricing, or ask me to write a reply.</div>
+            <div class="meta">
+              <span class="badge type-general">general</span>
+              <span class="badge priority-normal">normal</span>
+            </div>
+          </div>
+        </div>
+
+        <form id="chatForm" class="input-row">
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Type your message..."
+            autocomplete="off"
+            required
+          />
+          <button type="submit" id="sendButton">Send</button>
+          <button type="button" id="escalateButton" class="secondary-button"> Escalate</button>
+        </form>
+      </main>
     </div>
   </div>
 
