@@ -13,11 +13,12 @@ const anthropic = new Anthropic({
 
 // endpoint
 app.post('/ask', async (req, res) => {
-  const { message } = req.body;
-
   try {
+    const  message  = req.body?.message;
+
+  if(!message){return res.status(400).json({error: 'message is required'})}
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-latest',
+      model: 'claude-sonnet-4-6',
       max_tokens: 500,
       messages: [
         {
