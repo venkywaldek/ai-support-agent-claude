@@ -1,41 +1,28 @@
 import express from 'express';
-import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import agentRoutes from "./routes/agentRoutes.js"
 
 dotenv.config();
 
 const app = express();
+const PORT = 3000;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+app.use("/api", agentRoutes);
 
-// endpoint
-app.post('/ask', async (req, res) => {
-  try {
-    const  message  = req.body?.message;
 
-  if(!message){return res.status(400).json({error: 'message is required'})}
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 500,
-      messages: [
-        {
-          role: 'user',
-          content: message,
-        },
-      ],
-    });
+app.get("/", (req,res)=> {
+  res.sendFile(path.join(__dirname, "public", index.html));
+})
 
-    res.json({
-      reply: response.content[0].text,
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
-app.listen(3000, () => {
-  console.log('Server running on port 3000');
+app.listen(PORT, () => {
+  console.log(`Server running on port on http://localhost:${PORT}`);
 });

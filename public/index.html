@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Support Agent</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <div class="header">
+        <h1>AI Support Agent</h1>
+        <p>Ask a customer support question and get a smart response.</p>
+      </div>
+
+      <div class="chat-box" id="chatBox">
+        <div class="message bot">
+          Hi, I'm your AI support assistant. Try asking about an order, refund, working hours, pricing, or ask me to write a reply.
+        </div>
+      </div>
+
+      <form id="chatForm" class="input-row">
+        <input
+          type="text"
+          id="messageInput"
+          placeholder="Type your message..."
+          autocomplete="off"
+          required
+        />
+        <button type="submit" id="sendButton">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
