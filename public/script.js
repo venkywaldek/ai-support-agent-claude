@@ -3,6 +3,7 @@ const input = document.getElementById("messageInput");
 const chatBox = document.getElementById("chatBox");
 const sendButton = document.getElementById("sendButton");
 const escalateButton = document.getElementById("escalateButton");
+const ticketButtons = document.querySelectorAll(".ticket-item");
 
 const handledCount = document.getElementById("handledCount");
 const aiCount = document.getElementById("aiCount");
@@ -139,3 +140,10 @@ if (escalateButton) {
     await sendToAgent(message, true);
   });
 }
+
+ticketButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    input.value = button.dataset.message;
+    input.focus();
+  });
+});

@@ -378,3 +378,26 @@ body {
   flex: 1;
 }
 }
+
+.ticket-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ticket-item {
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #111827;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ticket-item:hover {
+  background: #eef4ff;
+  border-color: #c7d2fe;
+}

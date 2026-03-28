@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Support Agent</title>
+  <title>SupportAI Console</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,8 +13,8 @@
         <div class="brand">
           <div class="brand-badge">AI</div>
           <div>
-            <h2>Support Agent</h2>
-            <p>Customer Ops Console</p>
+            <h2>SupportAI</h2>
+            <p>Customer Operations Dashboard</p>
           </div>
         </div>
 
@@ -28,6 +28,7 @@
             <li>Ticket classification</li>
             <li>Company info lookup</li>
             <li>AI reply drafting</li>
+            <li>Human escalation</li>
           </ul>
         </div>
 
@@ -38,13 +39,31 @@
           <p>"Classify this angry complaint"</p>
           <p>"Write a reply to this customer..."</p>
         </div>
+
+        <div class="sidebar-card">
+          <h3>Sample Tickets</h3>
+          <div class="ticket-list">
+            <button class="ticket-item" data-message="Where is my order?">
+              Delayed order request
+            </button>
+            <button class="ticket-item" data-message="What is your refund policy?">
+              Refund question
+            </button>
+            <button class="ticket-item" data-message="Classify this angry complaint from a customer whose order is delayed">
+              Urgent complaint
+            </button>
+            <button class="ticket-item" data-message="Write a reply to this customer: I am frustrated because my package is late and nobody answered me">
+              Draft customer reply
+            </button>
+          </div>
+        </div>
       </aside>
 
       <main class="card">
         <div class="header">
           <div>
-            <h1>AI Support Agent</h1>
-            <p>Ask a customer support question and get a smart response.</p>
+            <h1>SupportAI Console</h1>
+            <p>AI-powered customer support, escalation, and ticket intelligence.</p>
           </div>
           <div class="status-pill">Live</div>
         </div>
@@ -66,7 +85,9 @@
 
         <div class="chat-box" id="chatBox">
           <div class="message bot">
-            <div>Hi, I'm your AI support assistant. Try asking about an order, refund, working hours, pricing, or ask me to write a reply.</div>
+            <div>
+              Welcome to SupportAI. I can answer support questions, classify urgency, draft replies, and escalate to a human agent when needed.
+            </div>
             <div class="meta">
               <span class="badge type-general">general</span>
               <span class="badge priority-normal">normal</span>
@@ -83,7 +104,9 @@
             required
           />
           <button type="submit" id="sendButton">Send</button>
-          <button type="button" id="escalateButton" class="secondary-button"> Escalate</button>
+          <button type="button" id="escalateButton" class="secondary-button">
+            Escalate
+          </button>
         </form>
       </main>
     </div>
