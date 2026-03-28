@@ -3,6 +3,6 @@ import {handleAgentRequest} from "../controllers/reportController.js"
 
 const router = express.Router();
 
-router.post("/agent", handleAgentRequest);
+router.post("/report", handleAgentRequest);
 
 export default router;

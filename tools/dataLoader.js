@@ -13,10 +13,25 @@ function readJson(filename) {
 }
 
 export function loadData() {
+  const contractsJson = readJson("contracts.json");
+  const workersJson = readJson("workers.json");
+  const workHistoryJson = readJson("work_history.json");
+  const partsCatalogJson = readJson("parts_catalog.json");
+  const workQueueJson = readJson("work_queue.json");
+  const workLogSchemaJson = readJson("work_log_schema.json");
+  const invoiceItemSchemaJson = readJson("invoice_item_schema.json");
+  const testPromptsJson = readJson("test_prompts.json");
+  const exampleConversationsJson = readJson("example_conversations.json");
+
   return {
-    contracts: readJson("contracts.json"),
-    workers: readJson("workers.json"),
-    workHistory: readJson("work_history.json"),
-    partsCatalog: readJson("parts_catalog.json"),
+    customers: contractsJson.customers || [],
+    workers: workersJson.workers || [],
+    workHistory: workHistoryJson.work_history || workHistoryJson.records || workHistoryJson.history || [],
+    partsCatalog: partsCatalogJson.parts || partsCatalogJson.catalog || partsCatalogJson.items || [],
+    workQueue: workQueueJson.jobs || workQueueJson.work_queue || workQueueJson.items || [],
+    workLogSchema: workLogSchemaJson,
+    invoiceItemSchema: invoiceItemSchemaJson,
+    testPrompts: testPromptsJson.test_cases || [],
+    exampleConversations: exampleConversationsJson.conversations || [],
   };
 }

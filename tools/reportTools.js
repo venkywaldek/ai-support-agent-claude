@@ -1,3 +1,20 @@
+export function isWorkLoggingIntent(message = "") {
+  const text = message.toLowerCase().trim();
+
+  const genericPhrases = [
+    "hi",
+    "hello",
+    "hey",
+    "can i log my work",
+    "i want to log my work",
+    "log my work",
+    "report work",
+    "need to report work",
+  ];
+
+  return genericPhrases.includes(text) || text.length < 12;
+}
+
 export function findMissingFields(parsedInput, context = {}) {
   const missing = [];
 

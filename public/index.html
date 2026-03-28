@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SupportAI Console</title>
+  <title>FieldOps AI</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,47 +13,68 @@
         <div class="brand">
           <div class="brand-badge">AI</div>
           <div>
-            <h2>SupportAI</h2>
-            <p>Customer Operations Dashboard</p>
+            <h2>FieldOps AI</h2>
+            <p>Work Reporting & Billing Copilot</p>
           </div>
         </div>
 
         <div class="sidebar-card">
           <h3>Agent Capabilities</h3>
           <ul>
-            <li>Order status</li>
-            <li>Refund policy</li>
-            <li>Working hours</li>
-            <li>Date and time</li>
-            <li>Ticket classification</li>
-            <li>Company info lookup</li>
-            <li>AI reply drafting</li>
-            <li>Human escalation</li>
+            <li>Technician work note parsing</li>
+            <li>Customer and site matching</li>
+            <li>Service category detection</li>
+            <li>Contract validation</li>
+            <li>Missing material suggestions</li>
+            <li>Certification checks</li>
+            <li>Duplicate work detection</li>
+            <li>Invoice-ready work log output</li>
           </ul>
         </div>
 
         <div class="sidebar-card">
-          <h3>Try prompts</h3>
-          <p>"Where is my order?"</p>
-          <p>"What is your pricing?"</p>
-          <p>"Classify this angry complaint"</p>
-          <p>"Write a reply to this customer..."</p>
+          <h3>Session Context</h3>
+          <p><strong>Worker:</strong> <span id="workerLabel">W-002</span></p>
+          <p><strong>Date:</strong> <span id="dateLabel">2026-03-25</span></p>
         </div>
 
         <div class="sidebar-card">
-          <h3>Sample Tickets</h3>
+          <h3>Try prompts</h3>
+          <p>"Hi. I replaced 3 LED tube lights in the hallway at Greenfield Sports Hall today. Took about an hour."</p>
+          <p>"Fixed leaking pipe at Herttoniemi Warehouse. 1.5 hours."</p>
+          <p>"At FrostBite warehouse, cold storage B is running warm. I'm going to check refrigerant."</p>
+          <p>"What's next?"</p>
+        </div>
+
+        <div class="sidebar-card">
+          <h3>Sample Jobs</h3>
           <div class="ticket-list">
-            <button class="ticket-item" data-message="Where is my order?">
-              Delayed order request
+            <button
+              class="ticket-item"
+              data-message="Hi. I replaced 3 LED tube lights in the hallway at Greenfield Sports Hall today. Took about an hour. No other materials needed."
+            >
+              Greenfield lights repair
             </button>
-            <button class="ticket-item" data-message="What is your refund policy?">
-              Refund question
+
+            <button
+              class="ticket-item"
+              data-message="Fixed a leaking pipe at Herttoniemi Warehouse for Nordic Property. Cut out a bad section and put in new copper pipe and couplings. 1.5 hours, today."
+            >
+              Herttoniemi pipe repair
             </button>
-            <button class="ticket-item" data-message="Classify this angry complaint from a customer whose order is delayed">
-              Urgent complaint
+
+            <button
+              class="ticket-item"
+              data-message="hey. im at frostbite warehouse. cold storage B seems to be running a bit warm, im thinking the refrigerant is low. im going to check the levels and top it up"
+            >
+              Refrigeration certification case
             </button>
-            <button class="ticket-item" data-message="Write a reply to this customer: I am frustrated because my package is late and nobody answered me">
-              Draft customer reply
+
+            <button
+              class="ticket-item"
+              data-message="heading to the shopping center to do the monthly hvac check. should take about 5 hours, gonna replace all the filters as usual."
+            >
+              Duplicate maintenance check
             </button>
           </div>
         </div>
@@ -62,23 +83,23 @@
       <main class="card">
         <div class="header">
           <div>
-            <h1>SupportAI Console</h1>
-            <p>AI-powered customer support, escalation, and ticket intelligence.</p>
+            <h1>FieldOps AI</h1>
+            <p>Turn messy technician notes into validated work logs and invoice-ready billing items.</p>
           </div>
           <div class="status-pill">Live</div>
         </div>
 
         <div class="stats-row">
           <div class="stat-card">
-            <span class="stat-label">Handled today</span>
+            <span class="stat-label">Reports handled</span>
             <span class="stat-value" id="handledCount">0</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">AI replies</span>
+            <span class="stat-label">Follow-ups needed</span>
             <span class="stat-value" id="aiCount">0</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">Tool actions</span>
+            <span class="stat-label">Work logs created</span>
             <span class="stat-value" id="toolCount">0</span>
           </div>
         </div>
@@ -86,11 +107,7 @@
         <div class="chat-box" id="chatBox">
           <div class="message bot">
             <div>
-              Welcome to SupportAI. I can answer support questions, classify urgency, draft replies, and escalate to a human agent when needed.
-            </div>
-            <div class="meta">
-              <span class="badge type-general">general</span>
-              <span class="badge priority-normal">normal</span>
+              Welcome to FieldOps AI. Send a rough technician note and I’ll turn it into a validated work log, ask follow-up questions if anything is missing, and prepare invoice-ready billing when allowed by the contract.
             </div>
           </div>
         </div>
@@ -99,16 +116,12 @@
           <input
             type="text"
             id="messageInput"
-            placeholder="Describe the work..."
+            placeholder="Describe the work done or planned..."
             autocomplete="off"
             required
           />
           <button type="submit" id="sendButton">Send</button>
-           <button type="button" id="voiceButton" class="secondary-button"> 🎤
-</button>
-          <button type="button" id="escalateButton" class="secondary-button">
-            Escalate
-          </button>
+          <button type="button" id="voiceButton" class="secondary-button">🎤</button>
         </form>
       </main>
     </div>
