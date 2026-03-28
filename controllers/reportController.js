@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import Anthropic from "@anthropic-ai/sdk";
+import { addWorkLog } from "../tools/workLogStore.js";
 
 import { loadData } from "../tools/dataLoader.js";
 import {
@@ -7,7 +8,7 @@ import {
   hasCertification,
   isAssignedToCustomer,
 } from "../tools/workerTools.js";
-import { addWorkLog } from "../tools/workLogStore.js";
+
 import {
   findSiteAndCustomerFromMessage,
   detectServiceCategory,
@@ -93,7 +94,9 @@ Return JSON only:
     parsed = {
       description: maybe.description || parsed.description,
       hours_worked:
-        maybe.hours_worked != null ? Number(maybe.hours_worked) : parsed.hours_worked,
+        maybe.hours_worked != null
+          ? Number(maybe.hours_worked)
+          : parsed.hours_worked,
       materials: Array.isArray(maybe.materials) ? maybe.materials : [],
       work_type: maybe.work_type || "repair",
     };
@@ -172,46 +175,41 @@ Example:
       });
     }
 
-    // const extracted = await extractWorkInfo(baseMessage);
-
-    // const matchedMaterials = matchMaterialsFromMessage(baseMessage, partsCatalog);
-    // extracted.materials = mergeMaterials(extracted.materials || [], matchedMaterials);
-
-    // const draft = existingSession?.draft
-    //   ? mergeDraftWithFollowUp(existingSession.draft, extracted)
-    //   : extracted;
-    
     const extracted = await extractWorkInfo(baseMessage);
 
-const matchedMaterialsFromWholeMessage = matchMaterialsFromMessage(
-  baseMessage,
-  partsCatalog
-);
+    const matchedMaterialsFromWholeMessage = matchMaterialsFromMessage(
+      baseMessage,
+      partsCatalog
+    );
 
-const matchedMaterialsFromLatestMessage = matchMaterialsFromMessage(
-  message,
-  partsCatalog
-);
+    const matchedMaterialsFromLatestMessage = matchMaterialsFromMessage(
+      message,
+      partsCatalog
+    );
 
-let followUpMaterials = mergeMaterials(
-  matchedMaterialsFromWholeMessage,
-  matchedMaterialsFromLatestMessage
-);
+    let followUpMaterials = mergeMaterials(
+      matchedMaterialsFromWholeMessage,
+      matchedMaterialsFromLatestMessage
+    );
 
-// If the user typed a material but catalog match failed, keep it as free text
-if (followUpMaterials.length === 0 && existingSession?.missing_fields?.includes("materials")) {
-  const freeTextMaterial = detectFreeTextMaterial(message);
-  if (freeTextMaterial) {
-    followUpMaterials = [freeTextMaterial];
-  }
-}
+    if (
+      followUpMaterials.length === 0 &&
+      existingSession?.missing_fields?.includes("materials")
+    ) {
+      const freeTextMaterial = detectFreeTextMaterial(message);
+      if (freeTextMaterial) {
+        followUpMaterials = [freeTextMaterial];
+      }
+    }
 
-extracted.materials = mergeMaterials(extracted.materials || [], followUpMaterials);
+    extracted.materials = mergeMaterials(
+      extracted.materials || [],
+      followUpMaterials
+    );
 
-const draft = existingSession?.draft
-  ? mergeDraftWithFollowUp(existingSession.draft, extracted)
-  : extracted;
-
+    const draft = existingSession?.draft
+      ? mergeDraftWithFollowUp(existingSession.draft, extracted)
+      : extracted;
 
     const serviceCategory = detectServiceCategory(baseMessage, contract);
 
@@ -255,8 +253,8 @@ const draft = existingSession?.draft
 
       return res.json({
         agent_reply: `Got it, ${worker.name}. I still need:\n- ${questions.join(
-  "\n- "
-)}${extraPrompt}
+          "\n- "
+        )}${extraPrompt}
 
 You can reply briefly, for example:
 - 1m copper pipe and 2 couplings
@@ -300,6 +298,8 @@ You can reply briefly, for example:
         },
         invoice_item: null,
       });
+
+      addWorkLog(workLog);
 
       return res.json({
         agent_reply: `Hold on — you're not assigned to ${customer.name}. Please confirm with dispatch before logging this.`,
@@ -349,6 +349,8 @@ You can reply briefly, for example:
         },
         invoice_item: null,
       });
+
+      addWorkLog(workLog);
 
       return res.json({
         agent_reply:
@@ -405,6 +407,8 @@ You can reply briefly, for example:
         },
         invoice_item: null,
       });
+
+      addWorkLog(workLog);
 
       return res.json({
         agent_reply: `Stop before starting — this work requires ${certificationRequirement}. You are not certified for it.`,
@@ -514,6 +518,7 @@ You can reply briefly, for example:
     });
 
     clearSession(worker_id);
+    addWorkLog(workLog);
 
     return res.json({
       agent_reply: pendingApproval
