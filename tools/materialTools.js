@@ -26,15 +26,6 @@ function getUnitPrice(part) {
   return Number(part.unit_price || part.price || 0);
 }
 
-function getAssociations(part) {
-  return safeArray(
-    part.work_type_associations ||
-      part.associations ||
-      part.tags ||
-      part.keywords
-  ).map(normalizeText);
-}
-
 function getAliases(part) {
   const aliases = safeArray(part.aliases).map(normalizeText);
   const name = normalizeText(getPartName(part));
@@ -55,9 +46,7 @@ function estimateQuantityFromMessage(message, aliases) {
 
     for (const pattern of patterns) {
       const match = text.match(pattern);
-      if (match) {
-        return Number(match[1]);
-      }
+      if (match) return Number(match[1]);
     }
   }
 
@@ -78,155 +67,23 @@ export function matchMaterialsFromMessage(message, partsCatalog) {
 
     const quantity = estimateQuantityFromMessage(text, aliases);
     const unitPrice = getUnitPrice(part);
-    const totalPrice = Number((quantity * unitPrice).toFixed(2));
 
     matches.push({
       part_id: getPartId(part),
       name: getPartName(part),
       quantity,
       unit_price: unitPrice,
-      total_price: totalPrice,
+      total_price: Number((quantity * unitPrice).toFixed(2)),
     });
   }
 
-  const unique = [];
   const seen = new Set();
-
-  for (const item of matches) {
+  return matches.filter((item) => {
     const key = `${item.part_id}-${item.name}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      unique.push(item);
-    }
-  }
-
-  return unique;
-}
-
-export function suggestLikelyMaterials({
-  message = "",
-  serviceCategory = "",
-  workType = "",
-  partsCatalog,
-  workHistory = [],
-  limit = 5,
-}) {
-  const text = normalizeText(message);
-  const category = normalizeText(serviceCategory);
-  const workTypeText = normalizeText(workType);
-  const items = getCatalogItems(partsCatalog);
-
-  const scored = items.map((part) => {
-    let score = 0;
-
-    const aliases = getAliases(part);
-    const associations = getAssociations(part);
-
-    if (category && associations.some((a) => a.includes(category))) score += 4;
-    if (workTypeText && associations.some((a) => a.includes(workTypeText))) score += 4;
-
-    if (text.includes("pipe") || text.includes("leak")) {
-      if (
-        aliases.some((a) =>
-          ["pipe", "copper", "coupling", "seal", "flux", "solder", "valve"].some((k) =>
-            a.includes(k)
-          )
-        )
-      ) {
-        score += 3;
-      }
-    }
-
-    if (text.includes("light") || text.includes("switch") || text.includes("electrical")) {
-      if (
-        aliases.some((a) =>
-          ["light", "led", "switch", "outlet", "fixture"].some((k) => a.includes(k))
-        )
-      ) {
-        score += 3;
-      }
-    }
-
-    if (text.includes("filter") || text.includes("ventilation")) {
-      if (
-        aliases.some((a) => ["filter", "belt", "fan"].some((k) => a.includes(k)))
-      ) {
-        score += 3;
-      }
-    }
-
-    if (
-      text.includes("refrigerant") ||
-      text.includes("cold storage") ||
-      text.includes("compressor") ||
-      text.includes("defrost")
-    ) {
-      if (
-        aliases.some((a) =>
-          ["refrigerant", "valve", "flare", "filter", "heater"].some((k) =>
-            a.includes(k)
-          )
-        )
-      ) {
-        score += 3;
-      }
-    }
-
-    const historyBoost = safeArray(workHistory).some((entry) => {
-      const desc = normalizeText(entry.description || "");
-      return (
-        desc &&
-        (category ? desc.includes(category) : false) &&
-        aliases.some((a) => a && desc.includes(a))
-      );
-    });
-
-    if (historyBoost) score += 2;
-
-    return { part, score };
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
-
-  return scored
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
-    .map(({ part }) => ({
-      part_id: getPartId(part),
-      name: getPartName(part),
-      unit_price: getUnitPrice(part),
-      associations: getAssociations(part),
-    }));
-}
-
-export function mergeMaterials(reportedMaterials = [], matchedMaterials = []) {
-  const result = [];
-  const seen = new Map();
-
-  for (const item of [...reportedMaterials, ...matchedMaterials]) {
-    const key = item.part_id || item.name;
-
-    if (!seen.has(key)) {
-      const normalized = {
-        part_id: item.part_id || "UNKNOWN",
-        name: item.name || "Unknown material",
-        quantity: Number(item.quantity || 1),
-        unit_price: Number(item.unit_price || 0),
-        total_price: Number(
-          (
-            Number(
-              item.total_price ||
-                Number(item.quantity || 1) * Number(item.unit_price || 0)
-            )
-          ).toFixed(2)
-        ),
-      };
-
-      seen.set(key, normalized);
-      result.push(normalized);
-    }
-  }
-
-  return result;
 }
 
 export function buildNonCatalogMaterial({
@@ -245,4 +102,155 @@ export function buildNonCatalogMaterial({
     unit_price: price,
     total_price: Number((qty * price).toFixed(2)),
   };
+}
+
+export function detectFreeTextMaterial(message = "") {
+  const text = normalizeText(message);
+
+  const ignore = [
+    "hours",
+    "hour",
+    "hrs",
+    "hr",
+    "site",
+    "today",
+    "yesterday",
+    "fixed",
+    "repair",
+    "worked",
+    "done",
+  ];
+
+  if (text.length < 3) return null;
+  if (ignore.some((w) => text === w)) return null;
+
+  // If user says "I used X" or just sends a material name, accept it.
+  const cleaned = text
+    .replace(/^i used\s+/i, "")
+    .replace(/^used\s+/i, "")
+    .trim();
+
+  if (!cleaned) return null;
+
+  return buildNonCatalogMaterial({
+    name: cleaned,
+    quantity: 1,
+    unit_price: 0,
+  });
+}
+
+export function mergeMaterials(existing = [], incoming = []) {
+  const result = [];
+  const seen = new Map();
+
+  for (const item of [...existing, ...incoming]) {
+    const key = item.part_id || item.name;
+    if (!seen.has(key)) {
+      const normalized = {
+        part_id: item.part_id || "UNKNOWN",
+        name: item.name || "Unknown material",
+        quantity: Number(item.quantity || 1),
+        unit_price: Number(item.unit_price || 0),
+        total_price: Number(
+          (
+            Number(
+              item.total_price ||
+                Number(item.quantity || 1) * Number(item.unit_price || 0)
+            )
+          ).toFixed(2)
+        ),
+      };
+      seen.set(key, normalized);
+      result.push(normalized);
+    }
+  }
+
+  return result;
+}
+
+export function suggestLikelyMaterials({
+  message = "",
+  serviceCategory = "",
+  workType = "",
+  partsCatalog,
+  limit = 5,
+}) {
+  const text = normalizeText(message);
+  const items = getCatalogItems(partsCatalog);
+
+  const scored = items.map((part) => {
+    let score = 0;
+    const name = normalizeText(getPartName(part));
+    const aliases = getAliases(part);
+
+    // Plumbing
+    if (
+      text.includes("pipe") ||
+      text.includes("leak") ||
+      text.includes("coupling") ||
+      text.includes("copper")
+    ) {
+      if (
+        aliases.some((a) =>
+          ["pipe", "copper", "coupling", "flux", "solder", "seal", "tape", "valve"].some((k) =>
+            a.includes(k)
+          )
+        )
+      ) {
+        score += 10;
+      }
+    }
+
+    // Electrical / lighting
+    if (
+      text.includes("light") ||
+      text.includes("led") ||
+      text.includes("switch") ||
+      text.includes("outlet")
+    ) {
+      if (
+        aliases.some((a) =>
+          ["light", "led", "tube", "panel", "switch", "outlet", "fixture"].some((k) =>
+            a.includes(k)
+          )
+        )
+      ) {
+        score += 10;
+      }
+    }
+
+    // HVAC / refrigeration
+    if (
+      text.includes("refrigerant") ||
+      text.includes("cold storage") ||
+      text.includes("defrost") ||
+      text.includes("compressor")
+    ) {
+      if (
+        aliases.some((a) =>
+          ["refrigerant", "valve", "flare", "heater", "filter"].some((k) =>
+            a.includes(k)
+          )
+        )
+      ) {
+        score += 10;
+      }
+    }
+
+    if (normalizeText(serviceCategory).includes("plumbing") && name.includes("copper")) {
+      score += 3;
+    }
+
+    return { part, score };
+  });
+
+  return scored
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(({ part }) => ({
+      part_id: getPartId(part),
+      name: getPartName(part),
+      unit_price: getUnitPrice(part),
+    }));
 }

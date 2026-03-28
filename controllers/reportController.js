@@ -40,6 +40,7 @@ import {
   matchMaterialsFromMessage,
   suggestLikelyMaterials,
   mergeMaterials,
+  detectFreeTextMaterial,
 } from "../tools/materialTools.js";
 
 import {
@@ -171,14 +172,46 @@ Example:
       });
     }
 
+    // const extracted = await extractWorkInfo(baseMessage);
+
+    // const matchedMaterials = matchMaterialsFromMessage(baseMessage, partsCatalog);
+    // extracted.materials = mergeMaterials(extracted.materials || [], matchedMaterials);
+
+    // const draft = existingSession?.draft
+    //   ? mergeDraftWithFollowUp(existingSession.draft, extracted)
+    //   : extracted;
+    
     const extracted = await extractWorkInfo(baseMessage);
 
-    const matchedMaterials = matchMaterialsFromMessage(baseMessage, partsCatalog);
-    extracted.materials = mergeMaterials(extracted.materials || [], matchedMaterials);
+const matchedMaterialsFromWholeMessage = matchMaterialsFromMessage(
+  baseMessage,
+  partsCatalog
+);
 
-    const draft = existingSession?.draft
-      ? mergeDraftWithFollowUp(existingSession.draft, extracted)
-      : extracted;
+const matchedMaterialsFromLatestMessage = matchMaterialsFromMessage(
+  message,
+  partsCatalog
+);
+
+let followUpMaterials = mergeMaterials(
+  matchedMaterialsFromWholeMessage,
+  matchedMaterialsFromLatestMessage
+);
+
+// If the user typed a material but catalog match failed, keep it as free text
+if (followUpMaterials.length === 0 && existingSession?.missing_fields?.includes("materials")) {
+  const freeTextMaterial = detectFreeTextMaterial(message);
+  if (freeTextMaterial) {
+    followUpMaterials = [freeTextMaterial];
+  }
+}
+
+extracted.materials = mergeMaterials(extracted.materials || [], followUpMaterials);
+
+const draft = existingSession?.draft
+  ? mergeDraftWithFollowUp(existingSession.draft, extracted)
+  : extracted;
+
 
     const serviceCategory = detectServiceCategory(baseMessage, contract);
 
@@ -222,8 +255,13 @@ Example:
 
       return res.json({
         agent_reply: `Got it, ${worker.name}. I still need:\n- ${questions.join(
-          "\n- "
-        )}${extraPrompt}`,
+  "\n- "
+)}${extraPrompt}
+
+You can reply briefly, for example:
+- 1m copper pipe and 2 couplings
+- solder and flux kit
+- no materials used`,
         needs_follow_up: true,
         missing_fields: missingFields,
         material_suggestions: materialSuggestions,
