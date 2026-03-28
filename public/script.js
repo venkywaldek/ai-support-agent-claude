@@ -4,7 +4,7 @@ const chatBox = document.getElementById("chatBox");
 const sendButton = document.getElementById("sendButton");
 const escalateButton = document.getElementById("escalateButton");
 const ticketButtons = document.querySelectorAll(".ticket-item");
-
+const voiceButton = document.getElementById("voiceButton");
 const handledCount = document.getElementById("handledCount");
 const aiCount = document.getElementById("aiCount");
 const toolCount = document.getElementById("toolCount");
@@ -147,3 +147,41 @@ ticketButtons.forEach((button) => {
     input.focus();
   });
 });
+
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (SpeechRecognition && voiceButton) {
+  const recognition = new SpeechRecognition();
+  recognition.lang = "en-US";
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  voiceButton.addEventListener("click", () => {
+    recognition.start();
+    voiceButton.disabled = true;
+    voiceButton.textContent = "Listening...";
+  });
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    input.value = transcript;
+    voiceButton.textContent = "🎤 Speak";
+    voiceButton.disabled = false;
+    input.focus();
+  };
+
+  recognition.onerror = () => {
+    voiceButton.textContent = "🎤 Speak";
+    voiceButton.disabled = false;
+    addMessage("Voice input failed. Please try again.", "bot");
+  };
+
+  recognition.onend = () => {
+    voiceButton.textContent = "🎤 Speak";
+    voiceButton.disabled = false;
+  };
+} else if (voiceButton) {
+  voiceButton.disabled = true;
+  voiceButton.textContent = "Voice unsupported";
+}

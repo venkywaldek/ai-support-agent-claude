@@ -208,7 +208,8 @@ body {
 .type-datetime,
 .type-hours,
 .type-order,
-.type-company-info {
+.type-company-info,
+.type-weather {
   background: #e0e7ff;
   color: #3730a3;
 }
@@ -226,6 +227,11 @@ body {
 .type-ai-reply {
   background: #dbeafe;
   color: #1d4ed8;
+}
+
+.type-human-support {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .priority-normal {
@@ -250,14 +256,17 @@ body {
 
 .input-row {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   padding: 18px 20px 20px;
   border-top: 1px solid #eef2f7;
   background: white;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .input-row input {
   flex: 1;
+  min-width: 220px;
   border: 1px solid #dbe3ef;
   border-radius: 14px;
   padding: 14px 16px;
@@ -269,7 +278,7 @@ body {
   border-color: #2563eb;
 }
 
-.input-row button {
+#sendButton {
   border: none;
   background: #111827;
   color: white;
@@ -278,13 +287,35 @@ body {
   cursor: pointer;
   font-weight: 600;
   min-height: 48px;
+  white-space: nowrap;
 }
 
-.input-row button:hover {
+#sendButton:hover {
   opacity: 0.92;
 }
 
-.input-row button:disabled {
+#sendButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondary-button {
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #111827;
+  padding: 0 18px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 48px;
+  white-space: nowrap;
+}
+
+.secondary-button:hover {
+  background: #f9fafb;
+}
+
+.secondary-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -297,6 +328,29 @@ body {
   border-radius: 16px;
   border-bottom-left-radius: 6px;
   font-size: 14px;
+}
+
+.ticket-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ticket-item {
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #111827;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ticket-item:hover {
+  background: #eef4ff;
+  border-color: #c7d2fe;
 }
 
 @media (max-width: 900px) {
@@ -343,61 +397,13 @@ body {
   .input-row {
     padding: 14px 16px 16px;
   }
-}
-.type-human-support {
-  background: #fee2e2;
-  color: #991b1b;
-}
 
-.secondary-button {
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #111827;
-  padding: 0 18px;
-  border-radius: 14px;
-  cursor: pointer;
-  font-weight: 600;
-  min-height: 48px;
-}
+  .input-row input {
+    width: 100%;
+  }
 
-.secondary-button:hover {
-  background: #f9fafb;
-}
-
-@media (max-width: 640px){
-  .input-row {
-  flex-wrap: wrap;
-}
-
-.input-row input {
-  width: 100%;
-}
-
-.input-row button,
-.secondary-button {
-  flex: 1;
-}
-}
-
-.ticket-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.ticket-item {
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  color: #111827;
-  text-align: left;
-  padding: 12px 14px;
-  border-radius: 14px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.ticket-item:hover {
-  background: #eef4ff;
-  border-color: #c7d2fe;
+  #sendButton,
+  .secondary-button {
+    flex: 1;
+  }
 }

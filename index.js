@@ -1,8 +1,8 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import agentRoutes from "./routes/agentRoutes.js"
+import express from "express";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+import reportRoutes from "./routes/reportRoutes.js";
 
 dotenv.config();
 
@@ -15,14 +15,13 @@ const __dirname = path.dirname(__filename);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-app.use("/api", agentRoutes);
+app.use("/api", reportRoutes);
 
-
-app.get("/", (req,res)=> {
-  res.sendFile(path.join(__dirname, "public", index.html));
-})
-
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 app.listen(PORT, () => {
-  console.log(`Server running on port on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
+

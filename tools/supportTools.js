@@ -18,6 +18,29 @@ export function getHumanSupportContact() {
   };
 }
 
+export async function getWeatherReal() {
+  try {
+    // Helsinki coordinates (you can change later)
+    const lat = 60.1699;
+    const lon = 24.9384;
+
+    const res = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
+    );
+
+    const data = await res.json();
+
+    const temp = data.current_weather.temperature;
+    const wind = data.current_weather.windspeed;
+
+    return `Current weather:
+Temperature: ${temp}°C
+Wind speed: ${wind} km/h`;
+  } catch (error) {
+    return "Unable to fetch weather right now.";
+  }
+}
+
 export function getCurrentDateTime() {
   const now = new Date();
   return `Current date and time: ${now.toLocaleString()}`;
@@ -74,7 +97,7 @@ export function detectTool(message) {
 
   if (text.includes("order")) return "order";
   if (text.includes("refund") || text.includes("return")) return "refund";
-
+ if (text.includes("weather")) return "weather";
   if (
     text.includes("working hours") ||
     text.includes("opening hours") ||

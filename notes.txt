@@ -1,0 +1,20 @@
+1. billing automation - revenue leekage 
+failed to bill their clients - because they forgot
+
+billing process is difficult to automate long contracts
+small problem : in these service companies , field technican hate  , build a system field technicans to update their work log hours
+your system capture every single detail for their billing
+
+we have also : data : json , unstructured system  and instructions in google drive
+
+2. 
+ai police :
+LLms have limitations , spatial understanding , clients in construction, floor plans , architectural drawing , anything to understand from messy data
+nicely formatted json
+pdfs : llms cant natively understand 
+find and build a system architectural drawings of a house ,
+a house perimeter and calculate the planks , how many meters planks should be ordered. real problem , i belive it can be done ,
+llm amaze 2d to solve :
+soon if you give it tools to machine and search algorithm : tool use 
+
+3. aaltoes food event ordering automation :
