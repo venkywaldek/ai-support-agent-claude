@@ -7,7 +7,7 @@ import {
   hasCertification,
   isAssignedToCustomer,
 } from "../tools/workerTools.js";
-
+import { addWorkLog } from "../tools/workLogStore.js";
 import {
   findSiteAndCustomerFromMessage,
   detectServiceCategory,

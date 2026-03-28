@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Technocrats Manager Panel</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <div class="manager-shell">
+      <header class="manager-header">
+        <div>
+          <h1>Manager Panel</h1>
+          <p>Review flagged work, approvals, duplicates, and recent logs.</p>
+        </div>
+        <a href="/" class="secondary-link">Back to Technician View</a>
+      </header>
+
+      <section class="manager-summary" id="summaryCards"></section>
+
+      <section class="manager-controls">
+        <button class="filter-button active" data-filter="all">All</button>
+        <button class="filter-button" data-filter="flagged">Flagged</button>
+        <button class="filter-button" data-filter="pending_approval">Pending Approval</button>
+        <button class="filter-button" data-filter="pending_review">Pending Review</button>
+        <button class="filter-button" data-filter="prevented">Prevented</button>
+        <button class="filter-button" data-filter="billable">Billable</button>
+      </section>
+
+      <section class="manager-list" id="workLogList"></section>
+    </div>
+  </div>
+
+  <script src="manager.js"></script>
+</body>
+</html>
