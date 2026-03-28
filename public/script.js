@@ -1,7 +1,17 @@
 const form = document.getElementById("chatForm");
+const workerSelect = document.getElementById("workerSelect");
 const input = document.getElementById("messageInput");
 const chatBox = document.getElementById("chatBox");
 const sendButton = document.getElementById("sendButton");
+const voiceButton = document.getElementById("voiceButton");
+
+const handledCount = document.getElementById("handledCount");
+const followupCount = document.getElementById("followupCount");
+const worklogCount = document.getElementById("worklogCount");
+
+let handled = 0;
+let followups = 0;
+let worklogs = 0;
 
 function addMessage(text, sender) {
   const wrapper = document.createElement("div");
@@ -29,11 +39,35 @@ function removeTyping() {
   if (typing) typing.remove();
 }
 
+function updateStats(data) {
+  handled += 1;
+  handledCount.textContent = handled;
+
+  if (data.needs_follow_up) {
+    followups += 1;
+    followupCount.textContent = followups;
+  }
+
+  if (data.work_log) {
+    worklogs += 1;
+    worklogCount.textContent = worklogs;
+  }
+}
+
+document.querySelectorAll(".ticket-item").forEach((button) => {
+  button.addEventListener("click", () => {
+    input.value = button.dataset.message || "";
+    input.focus();
+  });
+});
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const worker_id = workerSelect.value;
   const message = input.value.trim();
-  if (!message) return;
+
+  if (!worker_id || !message) return;
 
   addMessage(message, "user");
   input.value = "";
@@ -47,9 +81,8 @@ form.addEventListener("submit", async (e) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        worker_id,
         message,
-        worker_id: "W-002",
-        date: "2026-03-25",
       }),
     });
 
@@ -62,6 +95,7 @@ form.addEventListener("submit", async (e) => {
     }
 
     addMessage(data.agent_reply || "No reply returned.", "bot");
+    updateStats(data);
 
     if (data.work_log) {
       addMessage(
@@ -78,3 +112,38 @@ form.addEventListener("submit", async (e) => {
     input.focus();
   }
 });
+
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (SpeechRecognition && voiceButton) {
+  const recognition = new SpeechRecognition();
+  recognition.lang = "en-US";
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  voiceButton.addEventListener("click", () => {
+    recognition.start();
+    voiceButton.disabled = true;
+    voiceButton.textContent = "Listening...";
+  });
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    input.value = transcript;
+    voiceButton.textContent = "🎤";
+    voiceButton.disabled = false;
+    input.focus();
+  };
+
+  recognition.onerror = () => {
+    voiceButton.textContent = "🎤";
+    voiceButton.disabled = false;
+    addMessage("Voice input failed. Please try again.", "bot");
+  };
+
+  recognition.onend = () => {
+    voiceButton.textContent = "🎤";
+    voiceButton.disabled = false;
+  };
+}

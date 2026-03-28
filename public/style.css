@@ -407,3 +407,23 @@ body {
     flex: 1;
   }
 }
+
+#workerIdInput {
+  flex:  0 0 180px;
+}
+
+.worker-select {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid #dbe3ef;
+  border-radius: 12px;
+  font-size: 14px;
+  background: white;
+}
+
+.helper-text {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 8px;
+}

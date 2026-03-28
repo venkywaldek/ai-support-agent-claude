@@ -7,6 +7,7 @@ import {
   hasCertification,
   isAssignedToCustomer,
 } from "../tools/workerTools.js";
+
 import {
   findSiteAndCustomerFromMessage,
   detectServiceCategory,
@@ -17,22 +18,35 @@ import {
   getCertificationRequirement,
   isServiceCovered,
 } from "../tools/contractTools.js";
+
 import { findPotentialDuplicateWork } from "../tools/historyTools.js";
+
 import {
   findMissingFields,
   buildFollowUpQuestions,
-  buildWorkLog, isWorkLoggingIntent,
-  
+  buildWorkLog,
+  isWorkLoggingIntent,
+  extractHoursFromText,
+  extractDescriptionFromText,
+  mergeDraftWithFollowUp,
 } from "../tools/reportTools.js";
+
 import {
   buildInvoiceItem,
   checkApprovalRequired,
 } from "../tools/billingTools.js";
+
 import {
   matchMaterialsFromMessage,
   suggestLikelyMaterials,
   mergeMaterials,
 } from "../tools/materialTools.js";
+
+import {
+  getSession,
+  setSession,
+  clearSession,
+} from "../tools/sessionStore.js";
 
 dotenv.config();
 
@@ -40,69 +54,18 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-export async function handleAgentRequest(req, res) {
+async function extractWorkInfo(message) {
+  let parsed = {
+    description: extractDescriptionFromText(message),
+    hours_worked: extractHoursFromText(message),
+    materials: [],
+    work_type: "repair",
+  };
+
   try {
-    const {
-      message,
-      worker_id = "W-001",
-      date = new Date().toISOString().split("T")[0],
-    } = req.body;
-
-    if (!message) {
-      return res.status(400).json({ error: "message is required" });
-    }
-
-    const lowerMessage = message.toLowerCase().trim();
-
-const smallTalkMessages = [
-  "hi",
-  "hello",
-  "hey",
-  "can i log my work",
-  "i want to log my work",
-  "need to log work",
-  "log my work",
-  "report work",
-];
-
-if (
-  smallTalkMessages.includes(lowerMessage) ||
-  lowerMessage.length < 12
-) {
-  return res.json({
-    agent_reply:
-      "Yes — send me a short work note with the site, what you did, how long it took, and any materials used.\n\nExample:\nFixed leaking pipe at Herttoniemi Warehouse, 1.5 hours, used 1m copper pipe and 2 couplings.",
-    needs_follow_up: false,
-    missing_fields: [],
-    work_log: null,
-  });
-}
-if (isWorkLoggingIntent(message)) {
-  return res.json({
-    agent_reply:
-      "Yes — send me a short work note with the site, what you did, how long it took, and any materials used.\n\nExample:\nReplaced 3 LED tube lights at Greenfield Sports Hall, 1 hour, used 3 LED tubes.",
-    needs_follow_up: false,
-    missing_fields: [],
-    work_log: null,
-  });
-}
-
-    const { customers, workers, workHistory, partsCatalog } = loadData();
-
-    const worker = getWorkerById(worker_id, workers);
-    if (!worker) {
-      return res.status(404).json({ error: "Worker not found" });
-    }
-
-    const siteMatch = findSiteAndCustomerFromMessage(message, customers);
-
-    const customer = siteMatch?.customer || null;
-    const contract = siteMatch?.contract || null;
-    const site = siteMatch?.site || null;
-
-    const extraction = await anthropic.messages.create({
+    const response = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 400,
+      max_tokens: 250,
       messages: [
         {
           role: "user",
@@ -112,7 +75,7 @@ Extract structured work info from this technician message.
 Message:
 ${message}
 
-Return JSON only in this shape:
+Return JSON only:
 {
   "description": "string",
   "hours_worked": number | null,
@@ -124,42 +87,126 @@ Return JSON only in this shape:
       ],
     });
 
-    let parsed;
-    try {
-      parsed = JSON.parse(extraction.content[0].text);
-    } catch {
-      parsed = {
-        description: message,
-        hours_worked: null,
-        materials: [],
-        work_type: "repair",
-      };
+    const maybe = JSON.parse(response.content[0].text);
+
+    parsed = {
+      description: maybe.description || parsed.description,
+      hours_worked:
+        maybe.hours_worked != null ? Number(maybe.hours_worked) : parsed.hours_worked,
+      materials: Array.isArray(maybe.materials) ? maybe.materials : [],
+      work_type: maybe.work_type || "repair",
+    };
+  } catch {
+    // keep fallback
+  }
+
+  return parsed;
+}
+
+export async function handleAgentRequest(req, res) {
+  try {
+    let {
+      message,
+      worker_id = "W-001",
+      date = new Date().toISOString().split("T")[0],
+    } = req.body;
+
+    worker_id = worker_id?.toString().trim().toUpperCase();
+
+    if (!message) {
+      return res.status(400).json({ error: "message is required" });
     }
 
-    const serviceCategory = detectServiceCategory(message, contract);
+    const { customers, workers, workHistory, partsCatalog } = loadData();
 
-    const matchedMaterials = matchMaterialsFromMessage(message, partsCatalog);
-    parsed.materials = mergeMaterials(parsed.materials || [], matchedMaterials);
+    const worker = getWorkerById(worker_id, workers);
+    if (!worker) {
+      return res.status(404).json({ error: "Worker not found" });
+    }
+
+    const existingSession = getSession(worker_id);
+
+    if (isWorkLoggingIntent(message) && !existingSession) {
+      return res.json({
+        agent_reply: `Hi ${worker.name.split(" ")[0]} — send me a quick work note with:
+- site
+- what you did
+- how long it took
+- materials used
+
+Example:
+Fixed leaking pipe at Herttoniemi Warehouse, 1.5 hours, used 1m copper pipe and 2 couplings.`,
+        needs_follow_up: false,
+        missing_fields: [],
+        work_log: null,
+      });
+    }
+
+    const baseMessage = existingSession?.original_message
+      ? `${existingSession.original_message}\n${message}`
+      : message;
+
+    const siteMatch = findSiteAndCustomerFromMessage(baseMessage, customers);
+
+    const customer = siteMatch?.customer || null;
+    const contract = siteMatch?.contract || null;
+    const site = siteMatch?.site || null;
+
+    if (!customer || !contract || !site) {
+      setSession(worker_id, {
+        original_message: baseMessage,
+        draft: existingSession?.draft || {},
+        missing_fields: ["customer", "site"],
+      });
+
+      return res.json({
+        agent_reply: `Got it, ${worker.name}. Which site was this work done at?
+
+Example:
+- Herttoniemi Warehouse
+- Greenfield Sports Hall`,
+        needs_follow_up: true,
+        missing_fields: ["customer", "site"],
+        work_log: null,
+      });
+    }
+
+    const extracted = await extractWorkInfo(baseMessage);
+
+    const matchedMaterials = matchMaterialsFromMessage(baseMessage, partsCatalog);
+    extracted.materials = mergeMaterials(extracted.materials || [], matchedMaterials);
+
+    const draft = existingSession?.draft
+      ? mergeDraftWithFollowUp(existingSession.draft, extracted)
+      : extracted;
+
+    const serviceCategory = detectServiceCategory(baseMessage, contract);
 
     const missingFields = findMissingFields(
       {
-        ...parsed,
-        customer_id: customer?.customer_id,
-        site_id: site?.site_id,
+        ...draft,
+        customer_id: customer.customer_id,
+        site_id: site.site_id,
         service_category: serviceCategory,
       },
       { materialsLikelyRequired: true }
     );
 
     if (missingFields.length > 0) {
+      setSession(worker_id, {
+        original_message: baseMessage,
+        draft,
+        missing_fields: missingFields,
+      });
+
       const questions = buildFollowUpQuestions(missingFields);
 
       let materialSuggestions = [];
       if (missingFields.includes("materials")) {
         materialSuggestions = suggestLikelyMaterials({
-          message,
+          message: baseMessage,
           serviceCategory,
-          workType: parsed.work_type || "repair",
+          workType: draft.work_type || "repair",
           partsCatalog,
           workHistory,
           limit: 3,
@@ -174,7 +221,7 @@ Return JSON only in this shape:
           : "";
 
       return res.json({
-        agent_reply: `Got it, ${worker.name}. I need a bit more info:\n- ${questions.join(
+        agent_reply: `Got it, ${worker.name}. I still need:\n- ${questions.join(
           "\n- "
         )}${extraPrompt}`,
         needs_follow_up: true,
@@ -184,17 +231,9 @@ Return JSON only in this shape:
       });
     }
 
-    if (!customer || !contract || !site) {
-      return res.json({
-        agent_reply:
-          "I couldn't confidently match the customer site from that message. Which site was this at?",
-        needs_follow_up: true,
-        missing_fields: ["customer", "site"],
-        work_log: null,
-      });
-    }
-
     if (!isAssignedToCustomer(worker, customer.customer_id)) {
+      clearSession(worker_id);
+
       const workLog = buildWorkLog({
         customer_id: customer.customer_id,
         contract_id: contract.contract_id,
@@ -202,10 +241,10 @@ Return JSON only in this shape:
         worker_id,
         date,
         service_category: serviceCategory,
-        work_type: parsed.work_type || "repair",
-        description: parsed.description,
-        hours_worked: parsed.hours_worked || 0,
-        materials: parsed.materials || [],
+        work_type: draft.work_type || "repair",
+        description: draft.description,
+        hours_worked: draft.hours_worked || 0,
+        materials: draft.materials || [],
         compliance_flags: [
           {
             type: "scope",
@@ -233,12 +272,14 @@ Return JSON only in this shape:
     }
 
     const duplicate = findPotentialDuplicateWork(
-      message,
+      baseMessage,
       site.site_id,
       workHistory
     );
 
     if (duplicate) {
+      clearSession(worker_id);
+
       const workLog = buildWorkLog({
         customer_id: customer.customer_id,
         contract_id: contract.contract_id,
@@ -246,10 +287,10 @@ Return JSON only in this shape:
         worker_id,
         date,
         service_category: serviceCategory,
-        work_type: parsed.work_type || "repair",
-        description: parsed.description,
+        work_type: draft.work_type || "repair",
+        description: draft.description,
         hours_worked: 0,
-        materials: parsed.materials || [],
+        materials: draft.materials || [],
         compliance_flags: [
           {
             type: "duplicate",
@@ -283,7 +324,7 @@ Return JSON only in this shape:
     const covered = isServiceCovered(
       contract,
       serviceCategory,
-      parsed.description || message
+      draft.description || baseMessage
     );
 
     const certificationRequirement = getCertificationRequirement(
@@ -296,6 +337,8 @@ Return JSON only in this shape:
       : null;
 
     if (certificationRequirement && !certificationVerified) {
+      clearSession(worker_id);
+
       const workLog = buildWorkLog({
         customer_id: customer.customer_id,
         contract_id: contract.contract_id,
@@ -303,10 +346,10 @@ Return JSON only in this shape:
         worker_id,
         date,
         service_category: serviceCategory,
-        work_type: parsed.work_type || "repair",
-        description: parsed.description,
+        work_type: draft.work_type || "repair",
+        description: draft.description,
         hours_worked: 0,
-        materials: parsed.materials || [],
+        materials: draft.materials || [],
         compliance_flags: [
           {
             type: "certification",
@@ -335,9 +378,9 @@ Return JSON only in this shape:
 
     const rateInfo = getRateInfo(
       contract,
-      parsed.work_type || "repair",
+      draft.work_type || "repair",
       date,
-      message
+      baseMessage
     );
 
     const materialMarkup = getMaterialMarkup(contract);
@@ -354,12 +397,12 @@ Return JSON only in this shape:
       worker_id,
       date,
       service_category: serviceCategory,
-      work_type: parsed.work_type || "repair",
-      description: parsed.description,
-      hours_worked: parsed.hours_worked,
+      work_type: draft.work_type || "repair",
+      description: draft.description,
+      hours_worked: draft.hours_worked,
       rate_type: rateInfo.rate_type,
       hourly_rate: rateInfo.hourly_rate,
-      materials: parsed.materials || [],
+      materials: draft.materials || [],
       material_markup_percentage: materialMarkup,
       travel_cost: travelCost,
       requires_approval: false,
@@ -404,10 +447,10 @@ Return JSON only in this shape:
       worker_id,
       date,
       service_category: serviceCategory,
-      work_type: parsed.work_type || "repair",
-      description: parsed.description,
-      hours_worked: parsed.hours_worked,
-      materials: parsed.materials || [],
+      work_type: draft.work_type || "repair",
+      description: draft.description,
+      hours_worked: draft.hours_worked,
+      materials: draft.materials || [],
       compliance_flags: complianceFlags,
       validation: {
         billable,
@@ -431,6 +474,8 @@ Return JSON only in this shape:
           }
         : null,
     });
+
+    clearSession(worker_id);
 
     return res.json({
       agent_reply: pendingApproval
